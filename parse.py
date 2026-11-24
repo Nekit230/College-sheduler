@@ -10,14 +10,32 @@ PAGE_URL = "https://sustec.ru/raspisanie-ptk-ul-gagarina-7/"
 GROUP_NAME = "ПР-255/б"
 OUTPUT_FILE = "schedule.txt"
 
-# Только время начала пары — для 2x2 так намного компактнее
-BELLS = {
+# Звонки: Понедельник
+BELLS_MON = {
+    "1": "09:25",
+    "2": "11:10",
+    "3": "13:15",
+    "4": "15:00",
+}
+
+# Звонки: Вторник – Пятница
+BELLS_WEEKDAY = {
     "1": "08:30",
     "2": "10:15",
     "3": "12:30",
     "4": "14:15",
     "5": "16:00",
     "6": "17:45",
+}
+
+# Звонки: Суббота
+BELLS_SAT = {
+    "1": "08:30",
+    "2": "10:15",
+    "3": "12:10",
+    "4": "13:55",
+    "5": "15:40",
+    "6": "17:25",
 }
 
 DAYS_SHORT = {
@@ -40,24 +58,24 @@ def clean_text(text: str | None) -> str:
     return re.sub(r"\s+", " ", text.replace("\n", " ")).strip()
 
 
-def format_header(raw_header: str) -> str:
+def format_header(raw_header: str) -> tuple[str, str]:
     upper = raw_header.upper()
     date_match = re.search(r"\d{1,2}\s+[А-ЯЁ]+", upper)
     date_str = date_match.group(0) if date_match else "РАСПИСАНИЕ"
 
+    day_key = ""
     day_str = ""
     for full_day, short_day in DAYS_SHORT.items():
         if full_day in upper:
+            day_key = full_day
             day_str = f" • {short_day}"
             break
 
-    return f"{date_str}{day_str}"
+    return f"{date_str}{day_str}", day_key
 
 
 def clean_subject(text: str) -> str:
-    # Убираем фамилию и инициалы преподавателя (например, "Герасимова Н.В.")
     text = re.sub(r"\.?\s+[А-ЯЁ][а-яё\-]+\s+[А-ЯЁ]\.\s*[А-ЯЁ]\.?", "", text)
-    # Убираем "(1,2)" если мешает, и лишние точки в конце
     text = re.sub(r"\s*\(1,2\)", "", text)
     return text.strip(" .")
 
@@ -78,77 +96,10 @@ def find_pdf_url() -> str:
 
 def parse_schedule(pdf_bytes: bytes) -> str:
     header_line = "РАСПИСАНИЕ"
+    day_key = ""
     lessons = []
 
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         if pdf.pages:
-            first_text = pdf.pages[0].extract_text() or ""
-            for line in first_text.splitlines():
-                if "РАСПИСАНИЕ" in line.upper():
-                    header_line = format_header(clean_text(line))
-                    break
-
-        for page in pdf.pages:
-            tables = page.extract_tables() or []
-            for table in tables:
-                for r_idx, row in enumerate(table):
-                    if not row:
-                        continue
-                    for c_idx, cell in enumerate(row):
-                        if cell and GROUP_NAME.lower() in cell.lower():
-                            for sub_row in table[r_idx + 1:]:
-                                if not sub_row or len(sub_row) <= c_idx:
-                                    break
-                                pair_num = clean_text(sub_row[0])
-                                if not pair_num.isdigit():
-                                    break
-                                subject = clean_subject(clean_text(sub_row[c_idx]))
-                                # Ищем номер аудитории в ближайших ячейках справа
-                                room = ""
-                                for next_cell in sub_row[c_idx + 1 : c_idx + 4]:
-                                    val = clean_text(next_cell)
-                                    if val:
-                                        room = val
-                                        break
-                                if subject:
-                                    lessons.append((pair_num, subject, room))
-                            break
-                    if lessons:
-                        break
-                if lessons:
-                    break
-            if lessons:
-                break
-
-    # Форматирование с BBCode-тегами, которые понимает KWGT
-    lines = [f"[b][c=#C4B5FD]{header_line}[/c][/b]"]
-
-    if not lessons:
-        lines.append("[c=#94A3B8]Пар нет[/c]")
-    else:
-        for num, subj, room in lessons:
-            time_str = BELLS.get(num, "")
-            room_str = f"  [c=#67E8F9]{room}[/c]" if room else ""
-            lines.append(f"[b][c=#A78BFA]{num}[/c][/b] [c=#94A3B8]{time_str}[/c]{room_str}")
-            lines.append(f"[c=#F8FAFC]{subj}[/c]")
-
-    return "\n".join(lines)
-
-
-def main():
-    pdf_url = find_pdf_url()
-    pdf_resp = requests.get(pdf_url, headers=HEADERS, timeout=30)
-    pdf_resp.raise_for_status()
-
-    result = parse_schedule(pdf_resp.content)
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(result + "\n")
-
-    print("Готово:\n" + result)
-
-
-if __name__ == "__main__":
-    main()
-    
-
-  
+            first_text = pdf.
+        
