@@ -1,0 +1,36 @@
+name: Update Schedule
+
+on:
+  schedule:
+    # Запуск каждые 2 часа
+    - cron: "0 */2 * * *"
+  workflow_dispatch: # Позволяет запускать скрипт вручную кнопкой
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачать репозиторий
+        uses: actions/checkout@v4
+
+      - name: Установить Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Установить библиотеки
+        run: pip install requests beautifulsoup4 pdfplumber
+
+      - name: Запустить парсер
+        run: python parse.py
+
+      - name: Сохранить изменения
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add schedule.txt
+          git diff --staged --quiet || (git commit -m "Обновление расписания" && git push)
+          
