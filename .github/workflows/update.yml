@@ -3,7 +3,7 @@ name: Update Schedule
 on:
   schedule:
     # Запуск каждые 2 часа
-    - cron: "0 */2 * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch: # Позволяет запускать скрипт вручную кнопкой
 
 permissions:
