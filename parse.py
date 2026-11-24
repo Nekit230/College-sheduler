@@ -101,5 +101,6 @@ def parse_schedule(pdf_bytes: bytes) -> str:
 
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         if pdf.pages:
-            first_text = pdf.
+            first_text = pdf.pages[0].extract_text() or ""
+    
         
